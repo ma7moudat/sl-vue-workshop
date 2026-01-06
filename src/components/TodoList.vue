@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { v4 as uuid } from 'uuid'
 import type { Todo } from '@/types.ts'
 import TodoForm from '@/components/TodoForm.vue'
+import TodoItem from '@/components/TodoItem.vue'
 
 const todos = ref<Todo[]>([
   {
@@ -31,17 +32,15 @@ function onAddTodo(title: string) {
   <div>
     <TodoForm @add-todo="onAddTodo" />
     <ul>
-      <li v-for="(todo, index) in todos" :key="todo.id" :class="{ 'is-done': todo.done }">
-        {{ index + 1 }} / {{ todo.title }}
-        <input type="checkbox" v-model="todo.done" />
-      </li>
+      <TodoItem
+        v-for="(todo, index) in todos"
+        :key="todo.id"
+        :index="index"
+        :todo="todo"
+        @toggle-todo="todo.done = $event"
+      />
     </ul>
   </div>
 </template>
 
-<style scoped>
-.is-done {
-  background-color: pink;
-  text-decoration: line-through;
-}
-</style>
+<style scoped></style>
