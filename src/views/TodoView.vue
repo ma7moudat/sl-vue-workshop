@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import NavBar from '@/components/NavBar.vue'
+import TodoList from '@/components/TodoList.vue'
 </script>
 
 <template>
-  <NavBar />
-  <RouterView />
+  <TodoList />
 </template>
 
 <style scoped></style>
