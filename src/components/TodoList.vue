@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { v4 as uuid } from 'uuid'
 import type { Todo } from '@/types.ts'
+import TodoForm from '@/components/TodoForm.vue'
 
 const todos = ref<Todo[]>([
   {
@@ -16,23 +17,19 @@ const todos = ref<Todo[]>([
   },
 ])
 
-const newTodo = ref('')
-
-function addTodo() {
+function onAddTodo(title: string) {
   todos.value.push({
     id: uuid(),
-    title: newTodo.value,
+    title,
     done: false,
   })
-  newTodo.value = ''
 }
 </script>
 
 <template>
   <h2>My Todos</h2>
   <div>
-    <input type="text" v-model="newTodo" />
-    <button @click="addTodo">Save</button>
+    <TodoForm @add-todo="onAddTodo" />
     <ul>
       <li v-for="(todo, index) in todos" :key="todo.id" :class="{ 'is-done': todo.done }">
         {{ index + 1 }} / {{ todo.title }}
