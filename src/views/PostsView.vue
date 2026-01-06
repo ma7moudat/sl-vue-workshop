@@ -1,36 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { onMounted } from 'vue'
 import type { PostsResponse } from '@/types.ts'
+import { useFetch } from '@/composables/fetch.ts'
+import AsyncResponse from '@/components/AsyncResponse.vue'
 
-const postsResponse = ref<PostsResponse>()
-const error = ref<string | null>(null)
-const loading = ref(true)
-
-onMounted(() => {
-  postsResponse.value = undefined
-  error.value = null
-  loading.value = true
-  fetch('https://dummyjson.com/posts/?delay=1000')
-    .then((res) => res.json())
-    .catch((err) => (error.value = err.message))
-    .then((data) => (postsResponse.value = data))
-    .finally(() => (loading.value = false))
-})
+const {
+  response: postsResponse,
+  error,
+  loading,
+} = useFetch<PostsResponse>('https://dummyjson.com/posts/?delay=1000')
 </script>
 
 <template>
   <h1>Posts</h1>
-  <div v-if="loading">LOADING...</div>
-  <div v-else-if="error">Error: {{ error }}</div>
-  <ul v-else-if="postsResponse?.posts.length">
-    <li v-for="post in postsResponse?.posts" :key="post.id">
-      <RouterLink :to="`/posts/${post.id}`">
-        {{ post.title }}
-      </RouterLink>
-    </li>
-  </ul>
-  <div v-else>Nothing found</div>
+  <AsyncResponse :response="postsResponse" :error="error" :loading="loading">
+    <ul v-if="postsResponse?.posts.length">
+      <li v-for="post in postsResponse?.posts" :key="post.id">
+        <RouterLink :to="`/posts/${post.id}`">
+          {{ post.title }}
+        </RouterLink>
+      </li>
+    </ul>
+    <div v-else>Nothing found</div>
+  </AsyncResponse>
 </template>
 
 <style scoped></style>
