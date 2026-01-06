@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid'
 import type { Todo } from '@/types.ts'
 import TodoForm from '@/components/TodoForm.vue'
 import TodoItem from '@/components/TodoItem.vue'
+import { computed } from 'vue'
 
 const todos = ref<Todo[]>([
   {
@@ -18,6 +19,8 @@ const todos = ref<Todo[]>([
   },
 ])
 
+const remaining = computed(() => todos.value.filter(({ done }) => !done).length)
+
 function onAddTodo(title: string) {
   todos.value.push({
     id: uuid(),
@@ -28,7 +31,7 @@ function onAddTodo(title: string) {
 </script>
 
 <template>
-  <h2>My Todos</h2>
+  <h2>My Todos ({{ remaining }} of {{ todos.length }} remaining)</h2>
   <div>
     <TodoForm @add-todo="onAddTodo" />
     <ul>
