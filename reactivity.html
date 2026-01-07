@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+
+<script>
+  // --- Dependency graph: target -> key -> effects ---
+  const targetMap = new WeakMap();
+
+  let activeEffect = null;
+  const effectStack = [];
+
+  function effect(fn) {
+    const eff = () => {
+      cleanup(eff);            // optional but important for correctness
+      activeEffect = eff;
+      effectStack.push(eff);
+      try {
+        return fn();
+      } finally {
+        effectStack.pop();
+        activeEffect = effectStack[effectStack.length - 1] || null;
+      }
+    };
+    eff.deps = [];             // list of Sets this effect is currently in
+    eff();                     // run once initially
+    return eff;
+  }
+
+  function cleanup(eff) {
+    for (const dep of eff.deps) dep.delete(eff);
+    eff.deps.length = 0;
+  }
+
+  function track(target, key) {
+    if (!activeEffect) return;
+
+    let depsMap = targetMap.get(target);
+    if (!depsMap) targetMap.set(target, (depsMap = new Map()));
+
+    let dep = depsMap.get(key);
+    if (!dep) depsMap.set(key, (dep = new Set()));
+
+    if (!dep.has(activeEffect)) {
+      dep.add(activeEffect);
+      activeEffect.deps.push(dep);
+    }
+  }
+
+  function trigger(target, key) {
+    const depsMap = targetMap.get(target);
+    if (!depsMap) return;
+
+    const dep = depsMap.get(key);
+    if (!dep) return;
+
+    // Copy to avoid infinite loops if effects mutate deps while running
+    const effectsToRun = new Set(dep);
+    effectsToRun.forEach((eff) => eff());
+  }
+
+  // --- Reactive wrapper using Proxy ---
+  const reactiveCache = new WeakMap();
+
+  function reactive(target) {
+    if (reactiveCache.has(target)) return reactiveCache.get(target);
+
+    const proxy = new Proxy(target, {
+      get(t, key, receiver) {
+        const res = Reflect.get(t, key, receiver);
+        track(t, key);
+        // Optional deep reactive:
+        return (res && typeof res === "object") ? reactive(res) : res;
+      },
+      set(t, key, value, receiver) {
+        const old = t[key];
+        const result = Reflect.set(t, key, value, receiver);
+        // Minimal change detection:
+        if (old !== value) trigger(t, key);
+        return result;
+      },
+      deleteProperty(t, key) {
+        const hadKey = Object.prototype.hasOwnProperty.call(t, key);
+        const result = Reflect.deleteProperty(t, key);
+        if (hadKey && result) trigger(t, key);
+        return result;
+      }
+    });
+
+    reactiveCache.set(target, proxy);
+    return proxy;
+  }
+
+  // Usage
+
+  const state = reactive({ count: 0 });
+
+  effect(() => {
+    console.log("count is", state.count);
+  });
+
+  state.count++; // logs again
+
+</script>
+
+</body>
+</html>
